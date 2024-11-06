@@ -1,33 +1,52 @@
 import { useState } from 'react';
-import reactLogo from '@/assets/react.svg';
-import wxtLogo from '/wxt.svg';
-import './App.css';
+import { CdsToggle } from '@cds/react/toggle';
+import { CdsIcon } from '@cds/react/icon';
+import { ClarityIcons, cogIcon } from '@cds/core/icon';
+import { CdsButtonInline } from '@cds/react/button-inline';
+import { deleteAllRedirectRules, enableAllRedirectRules, redirectEnabledProvider, redirectSettingsProvider } from '@/src/RedirectSetting';
+
+ClarityIcons.addIcons(cogIcon);
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [redirectEnabled, setRedirectEnabled] = useState(true)
+  useEffect(() => {
+    redirectEnabledProvider.getValue().then(
+      v => {
+        setRedirectEnabled(v)
+      }
+    ).catch(e => {
+      console.error(e)
+    })
+    const unwatch = redirectEnabledProvider.watch(async (newValue, oldValue) => {
+      console.debug("redirectEnabled changed:", oldValue, newValue)
+      setRedirectEnabled(newValue)
+      const redirectSettings = await redirectSettingsProvider.getValue()
+      if (newValue) {
+        enableAllRedirectRules(redirectSettings)
+      } else {
+        deleteAllRedirectRules()
+      }
+    })
+  }, [])
 
   return (
     <>
-      <div>
-        <a href="https://wxt.dev" target="_blank">
-          <img src={wxtLogo} className="logo" alt="WXT logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div cds-layout="vertical p:md gap:md">
+        <div cds-layout="horizontal align:vertical-center">
+          <h1 cds-text="section">Redirector</h1>
+          <CdsToggle cds-layout="align:right">
+            <label></label>
+            <input type="checkbox" checked={redirectEnabled} onChange={() => {
+              redirectEnabledProvider.setValue(!redirectEnabled)
+            }} />
+          </CdsToggle>
+          <CdsButtonInline onClick={() => {
+            browser.runtime.openOptionsPage()
+          }}>
+            <CdsIcon shape="cog" />
+          </CdsButtonInline>
+        </div>
       </div>
-      <h1>WXT + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the WXT and React logos to learn more
-      </p>
     </>
   );
 }
