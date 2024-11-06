@@ -5,12 +5,19 @@ import { uniqueFilter } from '@/src/utils';
 import { RedirectSetting, redirectSettingsProvider } from '@/src/RedirectSetting';
 import { ImportModal } from './components/ImportModal';
 import { Header } from './components/Header';
+import { EditModal } from './components/EditModal';
+import { ConfirmModal } from './components/ConfirmModal';
+import { exportRedirectSettings } from '../background';
 
 ClarityIcons.addIcons(cogIcon);
 
 function App() {
     const [redirectSettings, setRedirectSettings] = useState<RedirectSetting[]>([])
     const [showImportModal, setShowImportModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [indexToEdit, setIndexToEdit] = useState(-1)
+
     useEffect(() => {
         redirectSettingsProvider.getValue().then(
             v => {
@@ -35,10 +42,17 @@ function App() {
                     <div className="content-area" cds-layout="m-t:md">
                         <h3>Redirect Settings</h3>
                         <div cds-layout="horizontal gap:lg p:md">
-                            {/* <CdsButtonInline onClick={() => { console.debug("Add redirect setting")}}>Add</CdsButtonInline> */}
+                            <CdsButtonInline onClick={() => {
+                                setIndexToEdit(-1)
+                                setShowEditModal(true)
+                            }}>Add</CdsButtonInline>
                             <CdsButtonInline onClick={() => { setShowImportModal(true) }}>Import</CdsButtonInline>
-                            <CdsButtonInline onClick={() => { redirectSettingsProvider.setValue([]) }}>Delete All</CdsButtonInline>
-                            {/* <CdsButtonInline>Export</CdsButtonInline> */}
+                            <CdsButtonInline onClick={() => { 
+                                exportRedirectSettings(redirectSettings)
+                            }}>Export</CdsButtonInline>
+                            <CdsButtonInline onClick={() => {
+                                setShowConfirmModal(true)
+                            }}>Delete All</CdsButtonInline>
                         </div>
                         <Datagrid onDeleted={(i) => {
                             redirectSettingsProvider.getValue().then(
@@ -50,7 +64,12 @@ function App() {
                             ).catch(e => {
                                 console.error(e)
                             })
-                        }} withAction={true} data={redirectSettings} />
+                        }}
+                            onEdit={(i) => {
+                                setShowEditModal(true)
+                                setIndexToEdit(i)
+                            }}
+                            withAction={true} data={redirectSettings} />
                     </div>
                 </div>
             </div>
@@ -70,6 +89,45 @@ function App() {
                     })
             })}
             />
+            <EditModal indexToEdit={indexToEdit} visible={showEditModal} onCloseChange={() => {
+                setShowEditModal(false)
+            }} onActionOk={
+                (r) => {
+                    if (indexToEdit < 0) {
+                        console.debug("Add", r)
+                        redirectSettingsProvider.getValue().then(
+                            redirectSettings => {
+                                const newRedirectSettings = uniqueFilter(([] as RedirectSetting[]).concat(...redirectSettings, r))
+                                redirectSettingsProvider.setValue(newRedirectSettings)
+                                console.debug("newRedirectSettings", newRedirectSettings)
+                            }).catch(e => {
+                                console.error(e)
+                            }).finally(() => {
+                                setShowEditModal(false)
+                            })
+                    } else {
+                        console.debug("Edit", r)
+                        redirectSettingsProvider.getValue().then(
+                            redirectSettings => {
+                                // edit: delete old setting and add new setting
+                                redirectSettings.splice(indexToEdit, 1)
+                                const newRedirectSettings = uniqueFilter(([] as RedirectSetting[]).concat(...redirectSettings, r))
+                                redirectSettingsProvider.setValue(newRedirectSettings)
+                                console.debug("newRedirectSettings", newRedirectSettings)
+                            }
+                        ).catch(e => {
+                            console.error(e)
+                        }).finally(() => {
+                            setShowEditModal(false)
+                            setIndexToEdit(-1)
+                        })
+                    }
+                }
+            } />
+            <ConfirmModal title="Confirm" message="Delete all redirect settings?" visible={showConfirmModal} onCloseChange={() => { setShowConfirmModal(false) }} onActionOk={() => {
+                redirectSettingsProvider.setValue([])
+                setShowConfirmModal(false)
+            }} />
         </>
     );
 }

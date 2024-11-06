@@ -12,19 +12,21 @@ export const redirectSettingsProvider = storage.defineItem<RedirectSetting[]>(RE
 export const redirectEnabledProvider = storage.defineItem<boolean>(REDIRECT_ENABLED_KEY, { fallback: true, version: 1 })
 
 export async function addRedirectRule(id: number, sourceDomain: string, targetDomain: string) {
-    await browser.declarativeNetRequest.updateDynamicRules({
+    return browser.declarativeNetRequest.updateDynamicRules({
         addRules: [
             {
                 id: id,
                 action: {
-                    type: browser.declarativeNetRequest.RuleActionType.REDIRECT,
+                    // @ts-expect-error
+                    type: 'redirect',
                     redirect: {
                         regexSubstitution: `\\1${targetDomain}\\2`
                     }
                 },
                 condition: {
                     regexFilter: regexUrlFilter(sourceDomain),
-                    resourceTypes: [browser.declarativeNetRequest.ResourceType.MAIN_FRAME]
+                    // @ts-expect-error
+                    resourceTypes: ['main_frame']
                 }
             }
         ]

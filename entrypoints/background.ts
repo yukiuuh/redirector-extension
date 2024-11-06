@@ -1,4 +1,5 @@
-import { deleteAllRedirectRules, enableAllRedirectRules, redirectEnabledProvider, redirectSettingsProvider } from "@/src/RedirectSetting";
+import { deleteAllRedirectRules, enableAllRedirectRules, redirectEnabledProvider, RedirectSetting, redirectSettingsProvider } from "@/src/RedirectSetting";
+import Papa from "papaparse";
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener((details) => {
@@ -25,3 +26,26 @@ export default defineBackground(() => {
     }
   })
 });
+
+export const parseRedirectSettingsToCsv = (redirectSettings: RedirectSetting[]) => {
+  return Papa.unparse(redirectSettings, { header: false, quotes: true })
+}
+
+export const exportRedirectSettings = (redirectSettings: RedirectSetting[]) => {
+  try {
+    const blob = new Blob([parseRedirectSettingsToCsv(redirectSettings)], { type: "application/json" })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "redirector.csv"
+
+    document.body.appendChild(link)
+    link.click()
+
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error("Export Error:", error)
+  }
+}

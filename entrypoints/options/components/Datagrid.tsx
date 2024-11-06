@@ -8,10 +8,11 @@ type Props = {
     data: any[]
     withAction?: boolean
     onDeleted?: (index: number) => void
+    onEdit?: (index: number) => void
 }
 
 export const Datagrid: React.FC<Props> = (props) => {
-    const { data, onDeleted } = props
+    const { data, onDeleted, onEdit } = props
     const baseId = useId()
     const columns = data.length > 0 ? Object.keys(data[0]) : []
     const [dropdownAnchor, setDropdownAnchor] = useState("")
@@ -39,7 +40,13 @@ export const Datagrid: React.FC<Props> = (props) => {
                 ))}
             </CdsGrid>
             <CdsDropdown anchor={CSS.escape(dropdownAnchor)} hidden={dropdownAnchor == ""} onCloseChange={(e) => { setDropdownAnchor("") }}>
-                {/* <CdsButton block action="flat" size="sm">Edit</CdsButton> */}
+                <CdsButton block action="flat" size="sm" onClick={
+                    (e) => {
+                        const indexToEdit = parseInt(dropdownAnchor.replace(baseId, ""))
+                        onEdit && onEdit(indexToEdit)
+                        setDropdownAnchor("")
+                    }
+                }>Edit</CdsButton>
                 <CdsButton block action="flat" size="sm" onClick={(e) => {
                     const indexToDelete = parseInt(dropdownAnchor.replace(baseId, ""))
                     onDeleted && onDeleted(indexToDelete)

@@ -8,7 +8,7 @@ export const parseCSV = (file: File) => {
                 resolve(results);
             },
             header: false,
-            worker: true,
+            worker: import.meta.env.FIREFOX ? false : true, // avoid wasm-unsafe-eval
             dynamicTyping: false,
             error: (e) => {
                 reject(e);
