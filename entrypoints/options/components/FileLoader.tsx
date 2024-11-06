@@ -7,7 +7,8 @@ type Props = {
     onChangeFiles?: (files: File[]) => void;
     loading?: boolean;
     status?: ControlStatus;
-};
+}
+
 const FileLoader: React.FC<Props> = (props) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [inputFiles, setInputFiles] = useState<FileList | null>(null);
